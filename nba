@@ -1,0 +1,41 @@
+import pandas as pd
+import numpy as np
+import sklearn
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+
+
+nba = pd.read_csv('all_seasons.csv')
+# nba.columns
+
+nba[['season_start','season_end']] = nba.season.str.split('-', expand = True)
+nba.drop(columns = ['Unnamed: 0', 'team_abbreviation', 'college', 'country', 'season', 'season_end', 'draft_year','draft_round'], inplace = True)
+nba.columns
+nba.season_start = nba.season_start.astype(int)
+nba.drop(nba[nba.season_start < 2000].index, inplace = True)
+nba.reset_index(drop = True, inplace = True)
+nba_lebron = nba.loc[nba['player_name'] == 'LeBron James']
+nba_lebron
+
+nba_lebron.mean()
+
+#compare reb,pts,ast
+
+sns.pairplot(nba_lebron[['ast','pts','reb']])
+
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(nba_lebron[['pts']], nba_lebron[['ast']], test_size = 0.2, random_state = 42)
+
+from sklearn.linear_model import LinearRegression
+
+lr = LinearRegression()
+
+lr.fit(x_train, y_train)
+
+pred = lr.predict(x_test)
+pred
+
+y_test
+x_test
