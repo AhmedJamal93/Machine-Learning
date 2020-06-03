@@ -1,0 +1,93 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
+from utils import *
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping, LambdaCallback
+
+
+## Setting column names
+column_names = ['year', 'age', 'distance', 'stores', ' lat', 'long', 'price']
+
+## importing Data
+housing = pd.read_csv('data.csv', names = column_names)
+housing.head()
+
+## Checking for null values
+housing.isna().sum()
+
+## Normalizing Data
+housing = housing.iloc[:,1:]
+housing_norm = (housing - housing.mean())/ housing.std()
+housing_norm.head()
+
+
+## creating function for label value
+y_mean = housing['price'].mean()
+y_std = housing['price'].std()
+
+def convert_label_value(pred):
+    return int(pred * y_std + y_mean)
+
+print(convert_label_value(0.350088))
+
+## creating training and test set
+# selecting features
+X = housing_norm.iloc[:, :6]
+X_arr = X.values #extracting just numeric values
+
+# selecting labels
+Y = housing_norm.iloc[:, -1]
+Y_arr = Y.values #extracting just numeric values
+
+## Train test split
+x_train, x_test, y_train, y_test = train_test_split(X_arr, Y_arr, test_size = 0.05,
+ shuffle = True,random_state = 0)
+
+## Creating the model
+def get_model():
+
+    model = Sequential([
+    Dense(10, input_shape = (6,), activation = 'relu'),
+    Dense(20, activation = 'relu'),
+    Dense(5, activation = 'relu'),
+    Dense(1)
+    ])
+
+    model.compile(
+        loss = 'mse',
+        optimizer = 'adam'
+    )
+
+    return model
+
+model = get_model()
+model.summary()
+
+## Model training
+early_stopping = EarlyStopping(monitor = 'val_loss', patience = 5)
+model = get_model()
+preds_untrained = model.predict(x_test)
+
+history = model.fit(
+    x_train, y_train,
+    validation_data = (x_test, y_test),
+    epochs = 1000,
+    callbacks = [early_stopping]
+)
+
+## Plotting
+preds_trained = model.predict(x_test)
+compare_predctions(preds_untrained, preds_trained, y_test)
+
+## converting back to price
+price_on_untrained = [convert_label_value(y) for y in preds_untrained]
+price_on_trained = [convert_label_value(y) for y in preds_trained]
+price_y_test = [convert_label_value(y) for y in y_test]
+
+compare_predictions(price_on_untrained, price_on_trained, price_y_test)
+
+## test
